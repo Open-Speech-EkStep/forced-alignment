@@ -1,4 +1,8 @@
 ## Installation Instructions 
+
+conda create -n alignment python=3.8
+conda activate alignment
+
 ```
 pip install -r requirements.txt 
 git clone https://github.com/harveenchadha/fairseq
