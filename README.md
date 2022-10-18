@@ -1,6 +1,16 @@
 ## Installation Instructions 
 ```
+pip install -r requirements.txt 
 git clone https://github.com/harveenchadha/fairseq
 cd fairseq
-pip install -e .
+```
+Change line $477$ of file `fairseq/dataclass/util.py` from `def merge_with_parent(dc: FairseqDataclass, cfg: DictConfig, remove_missing=False)` to `def merge_with_parent(dc: FairseqDataclass, cfg: DictConfig, remove_missing=True)`
+
+`pip install -e .`
+
+## Download models
+```
+mkdir -p models/wav2vec2/hindi
+wget -P models/wav2vec2/hindi https://storage.googleapis.com/test_public_bucket/alignment_models/wav2vec2/hindi/hi.pt
+wget -P models/wav2vec2/hindi https://storage.googleapis.com/test_public_bucket/alignment_models/wav2vec2/hindi/dict.ltr.txt
 ```
