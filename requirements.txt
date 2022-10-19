@@ -2,3 +2,4 @@ matplotlib==3.6.1
 pydub==0.25.1
 jupyter
 tensorboardX
+nemo_toolkit['all']
