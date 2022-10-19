@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 @dataclass(order=True)
 class ModelPath:
-    wav2vec2_path: str = '/Users/anirudhgupta/Desktop/forced-alignment/models/wav2vec2/hindi'
+    wav2vec2_path: str = '../models/wav2vec2/hindi'
     
 @dataclass(order=True)
 class Data:
