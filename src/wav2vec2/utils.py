@@ -5,11 +5,13 @@ import torch
 import torchaudio
 from dataclasses import dataclass
 
+
 @dataclass
 class Point:
     token_index: int
     time_index: int
     score: float
+
 
 @dataclass
 class Segment:
@@ -25,19 +27,22 @@ class Segment:
     def length(self):
         return self.end - self.start
 
+
 class Wav2vec2:
     def __init__(self, model_path):
-        self.asr_path = glob(model_path + '/*.pt')[0]
-        self.dict_path = glob(model_path + '/*.txt')[0]
+        self.asr_path = glob(model_path + "/*.pt")[0]
+        self.dict_path = glob(model_path + "/*.txt")[0]
         self.encoder = self.load_model_encoder()
         self.labels = self.get_labels()
-        
+
     def load_model_encoder(self):
-        model, _, _ = fairseq.checkpoint_utils.load_model_ensemble_and_task([self.asr_path])
+        model, _, _ = fairseq.checkpoint_utils.load_model_ensemble_and_task(
+            [self.asr_path]
+        )
         model = model[0]
         encoder = import_fairseq_model(model.w2v_encoder)
         return encoder
-        
+
     def get_emissions(self, wav):
         with torch.inference_mode():
             waveform, _ = torchaudio.load(wav)
@@ -45,29 +50,29 @@ class Wav2vec2:
             emissions = torch.log_softmax(emissions, dim=-1)
         emissions = emissions[0].cpu().detach()
         return emissions
-    
+
     def get_transcript(self, txt_path):
-        with open(txt_path, encoding='utf-8') as f:
+        with open(txt_path, encoding="utf-8") as f:
             txt = f.read().strip()
         words = txt.split()
         transcript = words[0]
         for word in words[1:]:
-            transcript += '|' + word
+            transcript += "|" + word
         return transcript
-        
+
     def get_labels(self):
-        with open(self.dict_path, encoding='utf-8') as f:
+        with open(self.dict_path, encoding="utf-8") as f:
             chars = f.read().splitlines()
         chars = [i.split()[0] for i in chars]
         labels = ["<s>", "<pad>", "</s>", "<unk>"] + chars
         labels = tuple(labels)
         return tuple(labels)
-    
+
     def get_transcript_tokens(self, txt_path):
         dictionary = {c: i for i, c in enumerate(self.labels)}
         tokens = [dictionary[c] for c in self.get_transcript(txt_path)]
         return tokens
-    
+
     def get_trellis(self, wav_path, txt_path, blank_id=0):
         emission = self.get_emissions(wav_path)
         tokens = self.get_transcript_tokens(txt_path)
@@ -91,7 +96,7 @@ class Wav2vec2:
                 trellis[t, :-1] + emission[t, tokens],
             )
         return emission, tokens, trellis
-    
+
     def backtrack(self, wav_path, txt_path, blank_id=0):
         # Note:
         # j and t are indices for trellis, which has extra dimensions
@@ -100,7 +105,9 @@ class Wav2vec2:
         # the corresponding index in emission is `T-1`.
         # Similarly, when referring to token index `J` in trellis,
         # the corresponding index in transcript is `J-1`.
-        emission, tokens, trellis = self.get_trellis(wav_path=wav_path, txt_path=txt_path)
+        emission, tokens, trellis = self.get_trellis(
+            wav_path=wav_path, txt_path=txt_path
+        )
         j = trellis.size(1) - 1
         t_start = torch.argmax(trellis[:, j]).item()
 
@@ -115,7 +122,9 @@ class Wav2vec2:
             changed = trellis[t - 1, j - 1] + emission[t - 1, tokens[j - 1]]
 
             # 2. Store the path with frame-wise probability.
-            prob = emission[t - 1, tokens[j - 1] if changed > stayed else 0].exp().item()
+            prob = (
+                emission[t - 1, tokens[j - 1] if changed > stayed else 0].exp().item()
+            )
             # Return token index and time index in non-trellis coordinate.
             path.append(Point(j - 1, t - 1, prob))
 
@@ -127,7 +136,7 @@ class Wav2vec2:
         else:
             raise ValueError("Failed to align")
         return path[::-1]
-    
+
     def merge_repeats(self, wav_path, txt_path):
         path = self.backtrack(wav_path=wav_path, txt_path=txt_path)
         transcript = self.get_transcript(txt_path=txt_path)
@@ -147,7 +156,7 @@ class Wav2vec2:
             )
             i1 = i2
         return segments
-    
+
     def merge_words(self, wav_path, txt_path, separator="|"):
         segments = self.merge_repeats(wav_path=wav_path, txt_path=txt_path)
         words = []
@@ -157,15 +166,19 @@ class Wav2vec2:
                 if i1 != i2:
                     segs = segments[i1:i2]
                     word = "".join([seg.label for seg in segs])
-                    score = sum(seg.score * seg.length for seg in segs) / sum(seg.length for seg in segs)
-                    words.append(Segment(word, segments[i1].start, segments[i2 - 1].end, score))
+                    score = sum(seg.score * seg.length for seg in segs) / sum(
+                        seg.length for seg in segs
+                    )
+                    words.append(
+                        Segment(word, segments[i1].start, segments[i2 - 1].end, score)
+                    )
                 i1 = i2 + 1
                 i2 = i1
             else:
                 i2 += 1
         return words
-    
 
-if __name__ == '__main__':
-    obj = Wav2vec2('../../models/wav2vec2/hindi')
-    print(obj.merge_words('../../examples/sample.wav', '../../examples/sample.txt'))
+
+if __name__ == "__main__":
+    obj = Wav2vec2("../../models/wav2vec2/hindi")
+    print(obj.merge_words("../../examples/sample.wav", "../../examples/sample.txt"))

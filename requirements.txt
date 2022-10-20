@@ -3,3 +3,4 @@ pydub==0.25.1
 jupyter
 tensorboardX
 nemo_toolkit['all']
+ctc_segmentation==1.7.1
