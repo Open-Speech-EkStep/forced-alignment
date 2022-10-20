@@ -27,7 +27,6 @@ class Segment:
 
 class Wav2vec2:
     def __init__(self, model_path):
-        self.model_path = model_path
         self.asr_path = glob(model_path + '/*.pt')[0]
         self.dict_path = glob(model_path + '/*.txt')[0]
         self.encoder = self.load_model_encoder()
