@@ -10,6 +10,7 @@ from rich.traceback import install
 install()
 console = Console()
 
+
 @dataclass
 class Point:
     token_index: int
@@ -20,8 +21,8 @@ class Point:
 @dataclass
 class Segment:
     label: str
-    start: int
-    end: int
+    start: float
+    end: float
     score: float
 
     def __repr__(self):
@@ -45,7 +46,9 @@ class Wav2vec2:
         )
         model = model[0]
         encoder = import_fairseq_model(model.w2v_encoder)
-        console.log(f":thumbs_up: Wav2vec2 model loaded successfully from {self.asr_path}")
+        console.log(
+            f":thumbs_up: Wav2vec2 model loaded successfully from {self.asr_path}"
+        )
         return encoder
 
     def get_emissions(self, wav):
@@ -54,7 +57,7 @@ class Wav2vec2:
             emissions, _ = self.encoder(waveform)
             emissions = torch.log_softmax(emissions, dim=-1)
         emissions = emissions[0].cpu().detach()
-        return emissions
+        return emissions, waveform[0].size(0)
 
     def get_transcript(self, txt_path):
         with open(txt_path, encoding="utf-8") as f:
@@ -79,7 +82,7 @@ class Wav2vec2:
         return tokens
 
     def get_trellis(self, wav_path, txt_path, blank_id=0):
-        emission = self.get_emissions(wav_path)
+        emission, wav_size = self.get_emissions(wav_path)
         tokens = self.get_transcript_tokens(txt_path)
         num_frame = emission.size(0)
         num_tokens = len(tokens)
@@ -100,7 +103,8 @@ class Wav2vec2:
                 # Score for changing to the next token
                 trellis[t, :-1] + emission[t, tokens],
             )
-        return emission, tokens, trellis
+        ratio = wav_size / (trellis.size(0) - 1)
+        return emission, tokens, trellis, ratio
 
     def backtrack(self, wav_path, txt_path, blank_id=0):
         # Note:
@@ -110,7 +114,7 @@ class Wav2vec2:
         # the corresponding index in emission is `T-1`.
         # Similarly, when referring to token index `J` in trellis,
         # the corresponding index in transcript is `J-1`.
-        emission, tokens, trellis = self.get_trellis(
+        emission, tokens, trellis, ratio = self.get_trellis(
             wav_path=wav_path, txt_path=txt_path
         )
         j = trellis.size(1) - 1
@@ -140,10 +144,10 @@ class Wav2vec2:
                     break
         else:
             raise ValueError("Failed to align")
-        return path[::-1]
+        return path[::-1], ratio
 
     def merge_repeats(self, wav_path, txt_path):
-        path = self.backtrack(wav_path=wav_path, txt_path=txt_path)
+        path, ratio = self.backtrack(wav_path=wav_path, txt_path=txt_path)
         transcript = self.get_transcript(txt_path=txt_path)
         i1, i2 = 0, 0
         segments = []
@@ -160,11 +164,13 @@ class Wav2vec2:
                 )
             )
             i1 = i2
-        return segments
+        return segments, ratio
 
     def merge_words(self, wav_path, txt_path, separator="|"):
-        segments = self.merge_repeats(wav_path=wav_path, txt_path=txt_path)
+        segments, ratio = self.merge_repeats(wav_path=wav_path, txt_path=txt_path)
         words = []
+        d = {}
+        word_stamps = []
         i1, i2 = 0, 0
         while i1 < len(segments):
             if i2 >= len(segments) or segments[i2].label == separator:
@@ -177,11 +183,18 @@ class Wav2vec2:
                     words.append(
                         Segment(word, segments[i1].start, segments[i2 - 1].end, score)
                     )
+                    d[word] = {
+                        "start": segments[i1].start * (ratio / 16000),
+                        "end": segments[i2 - 1].end * (ratio / 16000),
+                        "score": score,
+                    }
+                    word_stamps.append(d)
                 i1 = i2 + 1
                 i2 = i1
             else:
+                d = {}
                 i2 += 1
-        return words
+        return word_stamps
 
 
 if __name__ == "__main__":
