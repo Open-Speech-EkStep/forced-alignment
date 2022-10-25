@@ -9,6 +9,11 @@ import ctc_segmentation as cs
 from typing import List
 from tqdm import tqdm
 import math
+from rich.console import Console
+from rich.traceback import install
+
+install()
+console = Console()
 
 
 class Conformer:
@@ -26,6 +31,7 @@ class Conformer:
         classpath = model_cfg.target
         imported_class = model_utils.import_class_by_path(classpath)
         asr_model = imported_class.restore_from(restore_path=self.conformer_path)
+        console.log(f":thumbs_up: Conformer model loaded successfully from {self.conformer_path}")
         return asr_model
 
     def load_tokenizer(self):

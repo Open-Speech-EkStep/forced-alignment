@@ -4,7 +4,11 @@ import fairseq
 import torch
 import torchaudio
 from dataclasses import dataclass
+from rich.console import Console
+from rich.traceback import install
 
+install()
+console = Console()
 
 @dataclass
 class Point:
@@ -41,6 +45,7 @@ class Wav2vec2:
         )
         model = model[0]
         encoder = import_fairseq_model(model.w2v_encoder)
+        console.log(f":thumbs_up: Wav2vec2 model loaded successfully from {self.asr_path}")
         return encoder
 
     def get_emissions(self, wav):
