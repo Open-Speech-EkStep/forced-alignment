@@ -7,7 +7,6 @@ import srt
 from pydub import AudioSegment
 import numpy as np
 import torch
-import torch.nn.functional as F
 
 install()
 console = Console()
@@ -46,17 +45,9 @@ if __name__ == "__main__":
     subs = obj.read_subtitles()
     
     s, e = obj.segment_start_end_times_seconds(subs[1])
-    print(subs[1].content)
     chunk = obj.clip_audio(s, e)
     float_wav = np.array(chunk.get_array_of_samples()).astype('float64')
     t = torch.from_numpy(float_wav).float().view(1, -1)
-    print(type(t.shape))
-    #print(float_wav.shape)
-    #t = torch.from_numpy(float_wav).view(1, -1)
-    #with torch.no_grad():
-    #    float_wav = F.layer_norm(torch.from_numpy(float_wav).float(), float_wav.shape).view(1, -1)
-    #print(type(float_wav))
-    #print(float_wav.shape)
     word_segments = w2v_aligner.merge_words(t, subs[1].content)
     print(word_segments)
-    
+
