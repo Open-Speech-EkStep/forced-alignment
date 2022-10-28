@@ -34,11 +34,12 @@ class Segment:
 
 
 class Wav2vec2:
-    def __init__(self, model_path):
+    def __init__(self, model_path, mode):
         self.asr_path = glob(model_path + "/*.pt")[0]
         self.dict_path = glob(model_path + "/*.txt")[0]
         self.encoder = self.load_model_encoder()
         self.labels = self.get_labels()
+        self.mode = mode
 
     def load_model_encoder(self):
         model, _, _ = fairseq.checkpoint_utils.load_model_ensemble_and_task(
@@ -52,20 +53,34 @@ class Wav2vec2:
         return encoder
 
     def get_emissions(self, wav):
-        with torch.inference_mode():
-            waveform, _ = torchaudio.load(wav)
-            emissions, _ = self.encoder(waveform)
-            emissions = torch.log_softmax(emissions, dim=-1)
-        emissions = emissions[0].cpu().detach()
+        if self.mode == 'file':
+            with torch.inference_mode():
+                waveform, _ = torchaudio.load(wav)
+                emissions, _ = self.encoder(waveform)
+                emissions = torch.log_softmax(emissions, dim=-1)
+            emissions = emissions[0].cpu().detach()
+        else:
+            with torch.inference_mode():
+                waveform = wav
+                emissions, _ = self.encoder(waveform)
+                emissions = torch.log_softmax(emissions, dim=-1)
+            emissions = emissions[0].cpu().detach()
         return emissions, waveform[0].size(0)
 
     def get_transcript(self, txt_path):
-        with open(txt_path, encoding="utf-8") as f:
-            txt = f.read().strip()
-        words = txt.split()
-        transcript = words[0]
-        for word in words[1:]:
-            transcript += "|" + word
+        if self.mode == 'file':
+            with open(txt_path, encoding="utf-8") as f:
+                txt = f.read().strip()
+            words = txt.split()
+            transcript = words[0]
+            for word in words[1:]:
+                transcript += "|" + word
+        else:
+            txt = txt_path
+            words = txt.split()
+            transcript = words[0]
+            for word in words[1:]:
+                transcript += "|" + word
         return transcript
 
     def get_labels(self):
@@ -165,6 +180,12 @@ class Wav2vec2:
             )
             i1 = i2
         return segments, ratio
+    
+    def formatSrtTime(self, secTime):
+        sec, micro = str(secTime).split('.')
+        m, s = divmod(int(sec), 60)
+        h, m = divmod(m, 60)
+        return "{:02}:{:02}:{:02},{}".format(h, m, s, micro[:2])
 
     def merge_words(self, wav_path, txt_path, separator="|"):
         segments, ratio = self.merge_repeats(wav_path=wav_path, txt_path=txt_path)
@@ -184,8 +205,8 @@ class Wav2vec2:
                         Segment(word, segments[i1].start, segments[i2 - 1].end, score)
                     )
                     d[word] = {
-                        "start": segments[i1].start * (ratio / 16000),
-                        "end": segments[i2 - 1].end * (ratio / 16000),
+                        "start": self.formatSrtTime(segments[i1].start * (ratio / 16000)),
+                        "end": self.formatSrtTime(segments[i2 - 1].end * (ratio / 16000)),
                         "score": score,
                     }
                     word_stamps.append(d)
