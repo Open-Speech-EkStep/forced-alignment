@@ -53,7 +53,7 @@ class Wav2vec2:
         return encoder
 
     def get_emissions(self, wav):
-        if self.mode == 'file':
+        if self.mode == "file":
             with torch.inference_mode():
                 waveform, _ = torchaudio.load(wav)
                 emissions, _ = self.encoder(waveform)
@@ -68,7 +68,7 @@ class Wav2vec2:
         return emissions, waveform[0].size(0)
 
     def get_transcript(self, txt_path):
-        if self.mode == 'file':
+        if self.mode == "file":
             with open(txt_path, encoding="utf-8") as f:
                 txt = f.read().strip()
             words = txt.split()
@@ -180,9 +180,9 @@ class Wav2vec2:
             )
             i1 = i2
         return segments, ratio
-    
+
     def formatSrtTime(self, secTime):
-        sec, micro = str(secTime).split('.')
+        sec, micro = str(secTime).split(".")
         m, s = divmod(int(sec), 60)
         h, m = divmod(m, 60)
         return "{:02}:{:02}:{:02}.{}".format(h, m, s, micro[:2])
@@ -205,8 +205,12 @@ class Wav2vec2:
                         Segment(word, segments[i1].start, segments[i2 - 1].end, score)
                     )
                     d[word] = {
-                        "start": self.formatSrtTime(begin +  segments[i1].start * (ratio / 16000)),
-                        "end": self.formatSrtTime(begin + segments[i2 - 1].end * (ratio / 16000)),
+                        "start": self.formatSrtTime(
+                            begin + segments[i1].start * (ratio / 16000)
+                        ),
+                        "end": self.formatSrtTime(
+                            begin + segments[i2 - 1].end * (ratio / 16000)
+                        ),
                         "score": score,
                     }
                     word_stamps.append(d)
