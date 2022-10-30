@@ -185,9 +185,9 @@ class Wav2vec2:
         sec, micro = str(secTime).split('.')
         m, s = divmod(int(sec), 60)
         h, m = divmod(m, 60)
-        return "{:02}:{:02}:{:02},{}".format(h, m, s, micro[:2])
+        return "{:02}:{:02}:{:02}.{}".format(h, m, s, micro[:2])
 
-    def merge_words(self, wav_path, txt_path, separator="|"):
+    def merge_words(self, wav_path, txt_path, separator="|", begin=0):
         segments, ratio = self.merge_repeats(wav_path=wav_path, txt_path=txt_path)
         words = []
         d = {}
@@ -205,8 +205,8 @@ class Wav2vec2:
                         Segment(word, segments[i1].start, segments[i2 - 1].end, score)
                     )
                     d[word] = {
-                        "start": self.formatSrtTime(segments[i1].start * (ratio / 16000)),
-                        "end": self.formatSrtTime(segments[i2 - 1].end * (ratio / 16000)),
+                        "start": self.formatSrtTime(begin +  segments[i1].start * (ratio / 16000)),
+                        "end": self.formatSrtTime(begin + segments[i2 - 1].end * (ratio / 16000)),
                         "score": score,
                     }
                     word_stamps.append(d)
