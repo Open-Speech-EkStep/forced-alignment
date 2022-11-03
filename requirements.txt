@@ -2,7 +2,7 @@ matplotlib==3.6.1
 pydub==0.25.1
 jupyter
 tensorboardX
-nemo_toolkit['all']
+nemo_toolkit[all]
 ctc_segmentation==1.7.1
 rich==12.6.0
 srt==3.5.2
