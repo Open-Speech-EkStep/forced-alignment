@@ -34,9 +34,9 @@ class Segment:
 
 
 class Wav2vec2:
-    def __init__(self, model_path, mode):
-        self.asr_path = glob(model_path + "/*.pt")[0]
-        self.dict_path = glob(model_path + "/*.txt")[0]
+    def __init__(self, model_path, language_code, mode):
+        self.asr_path = glob(model_path + "/" + language_code + "/*.pt")[0]
+        self.dict_path = glob(model_path + "/" + language_code + "/*.txt")[0]
         self.encoder = self.load_model_encoder()
         self.labels = self.get_labels()
         self.mode = mode
@@ -223,5 +223,4 @@ class Wav2vec2:
 
 
 if __name__ == "__main__":
-    obj = Wav2vec2("../../models/wav2vec2/hindi")
-    print(obj.merge_words("../../examples/sample.wav", "../../examples/sample.txt"))
+    pass

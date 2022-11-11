@@ -9,6 +9,9 @@ import numpy as np
 import torch
 from tqdm import tqdm
 import json
+import re
+import string
+from indicnlp.normalize.indic_normalize import IndicNormalizerFactory
 
 install()
 console = Console()
@@ -18,10 +21,15 @@ console.log(f"Subtitle path: [green underline]{Data.srt_path}")
 
 
 class SubtitleTimestamps:
-    def __init__(self, srt_path, wav_path):
+    def __init__(self, srt_path, wav_path, language):
         self.srt_path = srt_path
         self.segments = self.read_subtitles()
         self.wav = AudioSegment.from_wav(wav_path)
+        self.language = language
+        self.factory = IndicNormalizerFactory()
+        console.log(f"Subtitle path: {srt_path}")
+        console.log(f"Audio path: {wav_path}")
+        console.log(f"Language:  {language}")
 
     def read_subtitles(self):
 
@@ -37,12 +45,55 @@ class SubtitleTimestamps:
     def clip_audio(self, start, end):
         return self.wav[start * 1000 : end * 1000]
 
+    def filter_text(self, text):
+
+        cleaned_text = re.sub("[%s]" % re.escape(string.punctuation + "।"), "", text)
+
+        if self.language == "en":
+            words = cleaned_text.split()
+            new_text = " "
+            for word in words:
+                new_text += word.lower() + " "
+            new_text = new_text.strip()
+            return new_text
+
+        else:
+            normalizer = self.factory.get_normalizer(self.language, remove_nuktas=False)
+            return normalizer.normalize(cleaned_text)
+
+    def adjust_alignment(self, data):
+
+        if self.language == "en":
+            for d, k in data.items():
+                words = k["text"].split()
+
+                for i in range(len(words)):
+
+                    old_key = list(k["timestamps"][i].keys())[0]
+
+                    if old_key != words[i]:
+                        k["timestamps"][i][words[i]] = k["timestamps"][i][old_key]
+                        del k["timestamps"][i][old_key]
+            return data
+
+        else:
+            return data
+
 
 if __name__ == "__main__":
+    language_codes = ModelPath.language_codes
+    aligner_models = {}
+    for language in language_codes:
+        aligner_models[language] = Wav2vec2(
+            ModelPath.wav2vec2_path, language_code=language, mode="tensor"
+        )
 
-    w2v_aligner = Wav2vec2(ModelPath.wav2vec2_path, mode="tensor")
-    obj = SubtitleTimestamps(Data.srt_path, Data.wav_path)
+    obj = SubtitleTimestamps(Data.srt_path, Data.wav_path, Data.language)
     subs = obj.read_subtitles()
+
+    if Data.language not in language_codes:
+        print("Specify the language code also while loading")
+        exit
 
     d = {}
 
@@ -56,16 +107,21 @@ if __name__ == "__main__":
             d[sub.index] = alignment
             continue
 
-        s, e = obj.segment_start_end_times_seconds(sub)
-        chunk = obj.clip_audio(s, e)
+        start, end = obj.segment_start_end_times_seconds(sub)
+        chunk = obj.clip_audio(start, end)
         float_wav = np.array(chunk.get_array_of_samples()).astype("float64")
-        t = torch.from_numpy(float_wav).float().view(1, -1)
-        word_segments = w2v_aligner.merge_words(
-            t, sub.content, begin=sub.start.total_seconds()
+        wav_tensor = torch.from_numpy(float_wav).float().view(1, -1)
+        cleaned_text = obj.filter_text(sub.content)
+
+        word_segments = aligner_models[Data.language].merge_words(
+            wav_tensor, cleaned_text, begin=sub.start.total_seconds()
         )
         alignment["text"] = sub.content
         alignment["timestamps"] = word_segments
 
         d[sub.index] = alignment
-    with open("alignment.json", "w+", encoding="utf-8") as f:
-        json.dump(d, f, indent=4)
+
+    alignment = obj.adjust_alignment(d)
+
+    with open("test.json", "w+", encoding="utf-8") as f:
+        json.dump(alignment, f, indent=4)

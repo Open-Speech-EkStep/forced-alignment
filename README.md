@@ -13,18 +13,52 @@ Change line $477$ of file `fairseq/dataclass/util.py` from `def merge_with_paren
 
 ## Download models
 ```
-mkdir -p models/wav2vec2/hindi
-wget -P models/wav2vec2/hindi https://storage.googleapis.com/test_public_bucket/alignment_models/wav2vec2/hindi/hi.pt
-wget -P models/wav2vec2/hindi https://storage.googleapis.com/test_public_bucket/alignment_models/wav2vec2/hindi/dict.ltr.txt
-mkdir -p models/wav2vec2/eng
-wget -P models/wav2vec2/eng https://storage.googleapis.com/test_public_bucket/alignment_models/wav2vec2/english/dict.ltr.txt
-wget -P models/wav2vec2/eng https://storage.googleapis.com/test_public_bucket/alignment_models/wav2vec2/english/checkpoint_last.pt
-mkdir -p models/nemo/hindi
-wget -P models/nemo/hindi https://storage.googleapis.com/vakyansh-open-models/conformer_models/hindi/ filtered_v1_ssl_2022-07-08_19-43-25/Conformer-CTC-BPE-Large.nemo
+mkdir -p models/wav2vec2/
+wget -P models/wav2vec2/ https://storage.googleapis.com/test_public_bucket/alignment_models.zip 
+cd models/wav2vec2 
+unzip aligner_models.zip
 ```
 
 ## Usage
+
+Currently the following languages are supported.
+```
+English - en
+Hindi - hi
+Bengali - bn
+Gujarati - gu
+Kannada - kn
+Malayalam - ml
+Marathi - mr
+Oriya - or
+Punjabi - pa
+Sanskrit - sa
+Tamil - ta
+Telugu - te
+Urdu - ur
+```
+
 Specify model path, audio file and text file in `src/configuration.py` 
+
+```{python}
+from dataclasses import dataclass
+
+
+@dataclass(order=True)
+class ModelPath:
+    wav2vec2_path: str = "../models/wav2vec2/aligner_models"
+    language_codes = ['en', 'hi'] # Languages to be loaded. Add the corresponding language code
+    confomer_path: str = "../models/nemo/eng"
+
+
+@dataclass(order=True)
+class Data:
+    wav_path: str = "audio/english.wav"
+    txt_path: str = "../examples/sample.txt"
+    srt_path: str = 'srt/English_corrected.srt'
+    language: str = 'en' # language of subtitle
+```
+
 ```
 cd src
 python align.py
