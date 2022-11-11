@@ -5,24 +5,37 @@ def get_ms_time(time_str):
   ms_time = round((int(h) * 3600 + int(m) * 60 + float(s))*1000)
   return ms_time
   
+<<<<<<< HEAD
 
 def ytt_generator(json_file_name, ytt_file_name, prev_line_in=0):
+=======
+def ytt_genorator(json_file_name, ytt_file_name):
+>>>>>>> f1c36fbc33a4d9b120cd0ae81d0c4b05c4c1c234
   f = open(json_file_name)
   # returns JSON object as 
   # a dictionary
   data = json.load(f)
+<<<<<<< HEAD
 
+=======
+>>>>>>> f1c36fbc33a4d9b120cd0ae81d0c4b05c4c1c234
   #some i/p, which can be set as user i/p later
   pos_id=7
   pos_id_prev = 11
   pen_id1=5
   pen_id2=4
   pen_id3=6
+<<<<<<< HEAD
 
   # Iterating through the json
   # list
   file3 = open(ytt_file_name,"w")
 
+=======
+  # Iterating through the json
+  # list
+  file3 = open(ytt_file_name,"w")
+>>>>>>> f1c36fbc33a4d9b120cd0ae81d0c4b05c4c1c234
   #write the xml format info, some of the i/p can be taken from users.
   file3.write('<?xml version="1.0" encoding="utf-8" ?>\n<timedtext format="3">\n<head>\n')
   file3.write('\t<!-- Text styles -->\n'
@@ -66,11 +79,17 @@ def ytt_generator(json_file_name, ytt_file_name, prev_line_in=0):
         prev_line_text=temp_text
         temp_text = full_text
         temp_id=temp_id+1
+<<<<<<< HEAD
 
       words=[]
       start_timestamp_words=[]
       end_timestamp_words =[]
 
+=======
+      words=[]
+      start_timestamp_words=[]
+      end_timestamp_words =[]
+>>>>>>> f1c36fbc33a4d9b120cd0ae81d0c4b05c4c1c234
       if j < len(data)-1:
         #next sentence start time stamp for the end of the chunck
         dict_next =data[str(j+1)]["timestamps"][0]
@@ -78,7 +97,10 @@ def ytt_generator(json_file_name, ytt_file_name, prev_line_in=0):
         start_timestamp_next= get_ms_time(dict_next[word_next]["start"])
         #print(start_timestamp_next)
         #end_timestamp_words.append(get_ms_time(i[word]["end"]))
+<<<<<<< HEAD
 
+=======
+>>>>>>> f1c36fbc33a4d9b120cd0ae81d0c4b05c4c1c234
       
       for i in data[str(j)]["timestamps"]:
         #each words and their start and end timestamp in hh:mm:ss.ms format
@@ -109,11 +131,16 @@ def ytt_generator(json_file_name, ytt_file_name, prev_line_in=0):
             #then for the rest of the time
             line =start_str + highlight_str + tail_str + " ".join(words) + end_str
             prev_line = start_str_prev + prev_line_text + highlight_str + tail_str + end_str
+<<<<<<< HEAD
             if prev_line_in == 1:
               file3.write(prev_line)
             
             file3.write(line)
 
+=======
+            file3.write(prev_line)
+            file3.write(line)
+>>>>>>> f1c36fbc33a4d9b120cd0ae81d0c4b05c4c1c234
             dur_ms =start_timestamp_words[k+1]-start_timestamp_words[k]-10
             start_str = ('\n\t<p t="' + str(start_timestamp_words[k]+10) 
                       + '" d="' + str(dur_ms) 
@@ -125,11 +152,16 @@ def ytt_generator(json_file_name, ytt_file_name, prev_line_in=0):
             
             line =start_str + highlight_str + words[k] + tail_str + " ".join(words[1:])+  end_str
             prev_line = start_str_prev + prev_line_text + highlight_str + tail_str + end_str
+<<<<<<< HEAD
             if prev_line_in == 1:
               file3.write(prev_line)
             
             file3.write(line)
 
+=======
+            file3.write(prev_line)
+            file3.write(line)
+>>>>>>> f1c36fbc33a4d9b120cd0ae81d0c4b05c4c1c234
           else:
             #middle words
             dur_ms =start_timestamp_words[k+1]-start_timestamp_words[k]
@@ -143,9 +175,13 @@ def ytt_generator(json_file_name, ytt_file_name, prev_line_in=0):
             
             line = start_str + " ".join(words[0:k]) + highlight_str + " "+ words[k] + tail_str + " ".join(words[k+1:])+  end_str
             prev_line = start_str_prev + prev_line_text + highlight_str + tail_str + end_str
+<<<<<<< HEAD
             if prev_line_in == 1:
               file3.write(prev_line)
             
+=======
+            file3.write(prev_line)
+>>>>>>> f1c36fbc33a4d9b120cd0ae81d0c4b05c4c1c234
             file3.write(line)
             #line =""
         
@@ -163,17 +199,24 @@ def ytt_generator(json_file_name, ytt_file_name, prev_line_in=0):
             
             line = start_str + " ".join(words[0:k]) + highlight_str + " "+ words[k] + tail_str + " ".join(words[k+1:])+  end_str
             prev_line = start_str_prev + prev_line_text + highlight_str + tail_str + end_str
+<<<<<<< HEAD
             if prev_line_in == 1:
               file3.write(prev_line)
 
             file3.write(line + "\n")
         
 
+=======
+            file3.write(prev_line)
+            file3.write(line + "\n")
+        
+>>>>>>> f1c36fbc33a4d9b120cd0ae81d0c4b05c4c1c234
   file3.write('</body>\n</timedtext>')
   # Closing file
   file3.close()
   f.close()
   print("file generation complete")
+<<<<<<< HEAD
         
   
 if __name__=="__main__":
@@ -182,3 +225,11 @@ if __name__=="__main__":
   prev_line_in = 0 #1 for 2 line caption per frame, 0 for single line.
   ytt_generator(json_file_name, ytt_file_name, prev_line_in)
   
+=======
+  
+if __name__=="__main__":
+  json_file_name = 'alignment.json'
+  ytt_file_name = 'myfileYT.ytt'
+  ytt_genorator(json_file_name, ytt_file_name)
+  
+>>>>>>> f1c36fbc33a4d9b120cd0ae81d0c4b05c4c1c234
