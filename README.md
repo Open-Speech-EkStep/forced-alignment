@@ -14,7 +14,7 @@ Change line $477$ of file `fairseq/dataclass/util.py` from `def merge_with_paren
 ## Download models
 ```
 mkdir -p models/wav2vec2/
-wget -P models/wav2vec2/ https://storage.googleapis.com/test_public_bucket/alignment_models.zip 
+wget -P models/wav2vec2/ https://storage.googleapis.com/test_public_bucket/aligner_models.zip
 cd models/wav2vec2 
 unzip aligner_models.zip
 ```
